@@ -19,9 +19,17 @@ internal class WordClueDictionary
     {
         var clues = _clues[ch];
 
-        // 检查是否已有包含性线索
-        var containsClues = clues.Where(c => c.ClueType != WordClueType.Gray).ToList();
-        if (containsClues.Count > 0 && clue.ClueType == WordClueType.Gray) return;
+        // 检查是否已有包含性线索，如果有，不添加灰色线索
+        if (clue.ClueType == WordClueType.Gray)
+        {
+            var containsClues = clues.Where(c => c.ClueType != WordClueType.Gray).ToList();
+            if (containsClues.Count > 0) return;
+        }
+        else // 检查是否已有排除线索，如果有，覆盖之
+        {
+            var grayClues = clues.Where(c => c.ClueType == WordClueType.Gray).ToList();
+            if (grayClues.Count > 0) clues.RemoveAll(c => c.ClueType == WordClueType.Gray);
+        }
 
         // 如果没有，添加一条新线索
         clues.Add(clue);
