@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wordle Helper - 在线版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Microsoft YaHei", "微软雅黑", "PingFang SC", "Hiragino Sans GB", "Source Han Sans CN", "Noto Sans CJK SC", sans-serif;
+            background: #ffffff;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: clamp(24px, 5vw, 36px);
+            font-weight: 600;
+        }
+
+        .section {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .word-input-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .word-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            text-transform: lowercase;
+        }
+
+        .word-input:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        .letter-grid {
+            display: grid;
+            gap: 8px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        .letter-box {
+            width: 60px;
+            height: 60px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
+        }
+
+        .letter-box:hover {
+            transform: scale(1.05);
+        }
+
+        .letter-box.gray {
+            background: #787c7e;
+            color: white;
+            border-color: #787c7e;
+        }
+
+        .letter-box.yellow {
+            background: #c9b458;
+            color: white;
+            border-color: #c9b458;
+        }
+
+        .letter-box.green {
+            background: #6aaa64;
+            color: white;
+            border-color: #6aaa64;
+        }
+
+        .button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .button-primary {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .button-primary:hover {
+            background: #45a049;
+        }
+
+        .button-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .button-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .buttons-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .results-container {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .results-count {
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #666;
+        }
+
+        .results-words {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .word-chip {
+            background: #e3f2fd;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 14px;
+            border: 1px solid #90caf9;
+        }
+
+        .history-item {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .history-guess {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .history-letters {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .history-letter {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            border-radius: 4px;
+            font-size: 18px;
+        }
+
+        .dictionary-selector {
+            margin-bottom: 15px;
+        }
+
+        .dictionary-selector label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .dictionary-selector select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        .file-upload {
+            margin-top: 10px;
+        }
+
+        .file-upload input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px dashed #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .instructions {
+            background: #fff9e6;
+            border: 1px solid #ffe066;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .instructions-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .instructions ul {
+            margin-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            .section {
+                padding: 15px;
+            }
+
+            .letter-box {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+
+            .history-letter {
+                width: 35px;
+                height: 35px;
+                font-size: 16px;
+            }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .error {
+            background: #ffebee;
+            border: 1px solid #ef5350;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #c62828;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Wordle Helper</h1>
+
+        <div class="instructions">
+            <div class="instructions-title">使用说明：</div>
+            <ul>
+                <li>输入你在Wordle中尝试的单词</li>
+                <li>点击字母方块切换颜色：灰色(不在单词中) → 黄色(在单词中但位置错误) → 绿色(位置正确)</li>
+                <li>点击"分析"查看可能的单词</li>
+                <li>继续输入下一轮猜测，重复以上步骤</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <div class="section-title">词库选择</div>
+            <div class="dictionary-selector">
+                <label>选择词库：</label>
+                <select id="dictionarySelect">
+                    <option value="words_nb">默认词库 (words_nb.txt)</option>
+                    <option value="words_alpha">完整词库 (words_alpha.txt)</option>
+                    <option value="custom">自定义词库</option>
+                </select>
+            </div>
+            <div class="file-upload" id="customUpload" style="display: none;">
+                <input type="file" id="customFile" accept=".txt">
+            </div>
+            <div id="dictionaryStatus" class="loading"></div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">输入猜测</div>
+            <div class="word-input-container">
+                <input type="text" id="guessInput" class="word-input" placeholder="输入你的猜测单词" maxlength="10">
+            </div>
+            <div id="letterGrid" class="letter-grid"></div>
+            <div class="buttons-row">
+                <button class="button button-primary" id="analyzeBtn" disabled>分析</button>
+                <button class="button button-secondary" id="resetBtn">重置本轮</button>
+                <button class="button button-secondary" id="clearAllBtn">清空全部</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">可能的单词</div>
+            <div class="results-container">
+                <div class="results-count" id="resultsCount">等待输入...</div>
+                <div class="results-words" id="resultsWords"></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">猜测历史</div>
+            <div id="historyContainer">
+                <div style="color: #999; text-align: center;">暂无历史记录</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class WordleHelper {
+            constructor() {
+                this.words = [];
+                this.filteredWords = [];
+                this.clues = {};
+                this.history = [];
+                this.currentGuess = '';
+                this.currentColors = [];
+                this.wordLength = 5;
+                
+                for (let i = 0; i < 26; i++) {
+                    this.clues[String.fromCharCode(97 + i)] = [];
+                }
+                
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.loadDefaultDictionary();
+            }
+
+            setupEventListeners() {
+                const guessInput = document.getElementById('guessInput');
+                const analyzeBtn = document.getElementById('analyzeBtn');
+                const resetBtn = document.getElementById('resetBtn');
+                const clearAllBtn = document.getElementById('clearAllBtn');
+                const dictionarySelect = document.getElementById('dictionarySelect');
+                const customFile = document.getElementById('customFile');
+
+                guessInput.addEventListener('input', (e) => {
+                    e.target.value = e.target.value.toLowerCase().replace(/[^a-z]/g, '');
+                    this.currentGuess = e.target.value;
+                    this.updateLetterGrid();
+                });
+
+                analyzeBtn.addEventListener('click', () => this.analyzeGuess());
+                resetBtn.addEventListener('click', () => this.resetCurrentGuess());
+                clearAllBtn.addEventListener('click', () => this.clearAll());
+
+                dictionarySelect.addEventListener('change', (e) => {
+                    const customUpload = document.getElementById('customUpload');
+                    if (e.target.value === 'custom') {
+                        customUpload.style.display = 'block';
+                    } else {
+                        customUpload.style.display = 'none';
+                        this.loadDefaultDictionary(e.target.value);
+                    }
+                });
+
+                customFile.addEventListener('change', (e) => this.loadCustomDictionary(e));
+            }
+
+            async loadDefaultDictionary(dictFile = null) {
+                const statusEl = document.getElementById('dictionaryStatus');
+                statusEl.textContent = '正在加载词库...';
+                
+                // Get the selected dictionary or use default
+                if (!dictFile) {
+                    const dictionarySelect = document.getElementById('dictionarySelect');
+                    dictFile = dictionarySelect.value;
+                }
+                
+                // Map the value to actual filename
+                const fileMap = {
+                    'words_nb': 'words_nb.txt',
+                    'words_alpha': 'words_alpha.txt'
+                };
+                
+                const filename = fileMap[dictFile] || 'words_nb.txt';
+                
+                try {
+                    const response = await fetch(filename);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const text = await response.text();
+                    this.words = text.split('\n')
+                        .map(w => w.trim().toLowerCase())
+                        .filter(w => w.length > 0);
+                    this.filteredWords = [...this.words];
+                    statusEl.textContent = `词库已加载 (${this.words.length} 个单词)`;
+                    this.updateResults();
+                } catch (error) {
+                    // If words_nb.txt doesn't exist, try falling back to words_alpha.txt
+                    if (filename === 'words_nb.txt') {
+                        console.log('words_nb.txt not found, falling back to words_alpha.txt');
+                        try {
+                            const response = await fetch('words_alpha.txt');
+                            const text = await response.text();
+                            this.words = text.split('\n')
+                                .map(w => w.trim().toLowerCase())
+                                .filter(w => w.length > 0);
+                            this.filteredWords = [...this.words];
+                            statusEl.textContent = `词库已加载 (${this.words.length} 个单词) - 使用备用词库`;
+                            this.updateResults();
+                            return;
+                        } catch (fallbackError) {
+                            console.error('Fallback also failed:', fallbackError);
+                        }
+                    }
+                    statusEl.innerHTML = '<span style="color: red;">词库加载失败</span>';
+                    console.error('Failed to load dictionary:', error);
+                }
+            }
+
+            loadCustomDictionary(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const statusEl = document.getElementById('dictionaryStatus');
+                statusEl.textContent = '正在加载自定义词库...';
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const text = e.target.result;
+                    this.words = text.split('\n')
+                        .map(w => w.trim().toLowerCase())
+                        .filter(w => w.length > 0);
+                    this.filteredWords = [...this.words];
+                    statusEl.textContent = `自定义词库已加载 (${this.words.length} 个单词)`;
+                    this.updateResults();
+                };
+                reader.onerror = () => {
+                    statusEl.innerHTML = '<span style="color: red;">自定义词库加载失败</span>';
+                };
+                reader.readAsText(file);
+            }
+
+            updateLetterGrid() {
+                const grid = document.getElementById('letterGrid');
+                const analyzeBtn = document.getElementById('analyzeBtn');
+                
+                if (this.currentGuess.length === 0) {
+                    grid.innerHTML = '';
+                    grid.style.gridTemplateColumns = '';
+                    analyzeBtn.disabled = true;
+                    return;
+                }
+
+                grid.style.gridTemplateColumns = `repeat(${this.currentGuess.length}, 60px)`;
+                
+                if (this.currentColors.length !== this.currentGuess.length) {
+                    this.currentColors = new Array(this.currentGuess.length).fill(0);
+                }
+
+                grid.innerHTML = '';
+                for (let i = 0; i < this.currentGuess.length; i++) {
+                    const box = document.createElement('div');
+                    box.className = 'letter-box';
+                    box.textContent = this.currentGuess[i];
+                    
+                    if (this.currentColors[i] === 0) {
+                        box.classList.add('gray');
+                    } else if (this.currentColors[i] === 1) {
+                        box.classList.add('yellow');
+                    } else if (this.currentColors[i] === 2) {
+                        box.classList.add('green');
+                    }
+
+                    box.addEventListener('click', () => {
+                        this.currentColors[i] = (this.currentColors[i] + 1) % 3;
+                        this.updateLetterGrid();
+                    });
+
+                    grid.appendChild(box);
+                }
+
+                analyzeBtn.disabled = false;
+            }
+
+            analyzeGuess() {
+                if (this.currentGuess.length === 0) return;
+
+                this.wordLength = this.currentGuess.length;
+
+                // Add clues based on colors
+                for (let i = 0; i < this.currentGuess.length; i++) {
+                    const char = this.currentGuess[i];
+                    const clueType = this.currentColors[i];
+                    this.addClue(char, clueType, i);
+                }
+
+                // Save to history
+                this.history.push({
+                    guess: this.currentGuess,
+                    colors: [...this.currentColors]
+                });
+
+                // Filter words
+                this.filterWords();
+
+                // Update UI
+                this.updateResults();
+                this.updateHistory();
+
+                // Reset current guess
+                this.resetCurrentGuess();
+            }
+
+            addClue(char, clueType, position) {
+                const clues = this.clues[char];
+
+                if (clueType === 0) { // Gray
+                    // Check if there are already yellow/green clues
+                    const hasContainClues = clues.some(c => c.type !== 0);
+                    if (!hasContainClues) {
+                        clues.push({ type: 0, position });
+                    }
+                } else { // Yellow or Green
+                    // Remove any gray clues
+                    const grayIndex = clues.findIndex(c => c.type === 0);
+                    if (grayIndex !== -1) {
+                        clues.splice(grayIndex, 1);
+                    }
+                    clues.push({ type: clueType, position });
+                }
+            }
+
+            filterWords() {
+                let filtered = this.filteredWords.filter(w => w.length === this.wordLength);
+
+                for (const [char, clues] of Object.entries(this.clues)) {
+                    if (clues.length === 0) continue;
+
+                    // Filter based on gray clues (letter not in word)
+                    const grayClue = clues.find(c => c.type === 0);
+                    if (grayClue) {
+                        filtered = filtered.filter(w => !w.includes(char));
+                    }
+
+                    // Filter based on contain clues (yellow/green)
+                    const containClues = clues.filter(c => c.type !== 0);
+                    const yellowClues = containClues.filter(c => c.type === 1);
+                    const greenClues = containClues.filter(c => c.type === 2);
+
+                    if (containClues.length > 0) {
+                        // Word must contain at least this many of the character
+                        filtered = filtered.filter(w => {
+                            const count = (w.match(new RegExp(char, 'g')) || []).length;
+                            return count >= containClues.length;
+                        });
+                    }
+
+                    // Yellow: letter must be in word but NOT at this position
+                    if (yellowClues.length > 0) {
+                        for (const clue of yellowClues) {
+                            filtered = filtered.filter(w => w[clue.position] !== char);
+                        }
+                    }
+
+                    // Green: letter must be at exactly this position
+                    if (greenClues.length > 0) {
+                        for (const clue of greenClues) {
+                            filtered = filtered.filter(w => w[clue.position] === char);
+                        }
+                    }
+                }
+
+                this.filteredWords = filtered;
+                this.clearClues();
+            }
+
+            clearClues() {
+                for (const char in this.clues) {
+                    this.clues[char] = [];
+                }
+            }
+
+            updateResults() {
+                const countEl = document.getElementById('resultsCount');
+                const wordsEl = document.getElementById('resultsWords');
+
+                countEl.textContent = `找到 ${this.filteredWords.length} 个可能的单词`;
+
+                if (this.filteredWords.length === 0) {
+                    wordsEl.innerHTML = '<div style="color: #999;">没有找到匹配的单词</div>';
+                } else if (this.filteredWords.length > 200) {
+                    wordsEl.innerHTML = `<div style="color: #666;">结果太多 (${this.filteredWords.length} 个)，请继续输入更多线索</div>`;
+                } else {
+                    wordsEl.innerHTML = this.filteredWords
+                        .slice(0, 200)
+                        .map(w => `<span class="word-chip">${w}</span>`)
+                        .join('');
+                }
+            }
+
+            updateHistory() {
+                const container = document.getElementById('historyContainer');
+                
+                if (this.history.length === 0) {
+                    container.innerHTML = '<div style="color: #999; text-align: center;">暂无历史记录</div>';
+                    return;
+                }
+
+                container.innerHTML = this.history.map((item, index) => {
+                    const letters = item.guess.split('').map((char, i) => {
+                        const colorClass = item.colors[i] === 0 ? 'gray' : 
+                                         item.colors[i] === 1 ? 'yellow' : 'green';
+                        return `<div class="history-letter ${colorClass}">${char.toUpperCase()}</div>`;
+                    }).join('');
+
+                    return `
+                        <div class="history-item">
+                            <div class="history-guess">第 ${index + 1} 次猜测：${item.guess}</div>
+                            <div class="history-letters">${letters}</div>
+                        </div>
+                    `;
+                }).reverse().join('');
+            }
+
+            resetCurrentGuess() {
+                this.currentGuess = '';
+                this.currentColors = [];
+                document.getElementById('guessInput').value = '';
+                this.updateLetterGrid();
+            }
+
+            clearAll() {
+                this.filteredWords = [...this.words];
+                this.history = [];
+                this.clearClues();
+                this.resetCurrentGuess();
+                this.updateResults();
+                this.updateHistory();
+            }
+        }
+
+        // Initialize the app
+        const app = new WordleHelper();
+    </script>
+</body>
+</html>
