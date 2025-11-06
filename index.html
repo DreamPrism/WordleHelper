@@ -12,7 +12,7 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Microsoft YaHei", "微软雅黑", "PingFang SC", "Hiragino Sans GB", "Source Han Sans CN", "Noto Sans CJK SC", sans-serif;
             background: #ffffff;
             color: #333;
             line-height: 1.6;
@@ -318,7 +318,8 @@
             <div class="dictionary-selector">
                 <label>选择词库：</label>
                 <select id="dictionarySelect">
-                    <option value="words_alpha">默认词库 (words_alpha.txt)</option>
+                    <option value="words_nb">默认词库 (words_nb.txt)</option>
+                    <option value="words_alpha">完整词库 (words_alpha.txt)</option>
                     <option value="custom">自定义词库</option>
                 </select>
             </div>
@@ -404,19 +405,36 @@
                         customUpload.style.display = 'block';
                     } else {
                         customUpload.style.display = 'none';
-                        this.loadDefaultDictionary();
+                        this.loadDefaultDictionary(e.target.value);
                     }
                 });
 
                 customFile.addEventListener('change', (e) => this.loadCustomDictionary(e));
             }
 
-            async loadDefaultDictionary() {
+            async loadDefaultDictionary(dictFile = null) {
                 const statusEl = document.getElementById('dictionaryStatus');
                 statusEl.textContent = '正在加载词库...';
                 
+                // Get the selected dictionary or use default
+                if (!dictFile) {
+                    const dictionarySelect = document.getElementById('dictionarySelect');
+                    dictFile = dictionarySelect.value;
+                }
+                
+                // Map the value to actual filename
+                const fileMap = {
+                    'words_nb': 'words_nb.txt',
+                    'words_alpha': 'words_alpha.txt'
+                };
+                
+                const filename = fileMap[dictFile] || 'words_nb.txt';
+                
                 try {
-                    const response = await fetch('words_alpha.txt');
+                    const response = await fetch(filename);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
                     const text = await response.text();
                     this.words = text.split('\n')
                         .map(w => w.trim().toLowerCase())
@@ -425,6 +443,23 @@
                     statusEl.textContent = `词库已加载 (${this.words.length} 个单词)`;
                     this.updateResults();
                 } catch (error) {
+                    // If words_nb.txt doesn't exist, try falling back to words_alpha.txt
+                    if (filename === 'words_nb.txt') {
+                        console.log('words_nb.txt not found, falling back to words_alpha.txt');
+                        try {
+                            const response = await fetch('words_alpha.txt');
+                            const text = await response.text();
+                            this.words = text.split('\n')
+                                .map(w => w.trim().toLowerCase())
+                                .filter(w => w.length > 0);
+                            this.filteredWords = [...this.words];
+                            statusEl.textContent = `词库已加载 (${this.words.length} 个单词) - 使用备用词库`;
+                            this.updateResults();
+                            return;
+                        } catch (fallbackError) {
+                            console.error('Fallback also failed:', fallbackError);
+                        }
+                    }
                     statusEl.innerHTML = '<span style="color: red;">词库加载失败</span>';
                     console.error('Failed to load dictionary:', error);
                 }
