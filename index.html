@@ -544,7 +544,7 @@
             }
 
             filterWords() {
-                let filtered = this.words.filter(w => w.length === this.wordLength);
+                let filtered = this.filteredWords.filter(w => w.length === this.wordLength);
 
                 for (const [char, clues] of Object.entries(this.clues)) {
                     if (clues.length === 0) continue;
